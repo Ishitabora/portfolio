@@ -1,0 +1,35 @@
+## The problem
+
+DermaSense pairs a computer vision model with a language model to explain skin-lesion triage results to a non-expert user. The risk is obvious: an LLM asked to "explain a diagnosis" will happily invent medical facts it was never given. In a health context, a confident wrong answer does more harm than no answer at all.
+
+## What I built
+
+I designed and built the retrieval-augmented generation layer end to end, under one rule: **CV computes, RAG retrieves, the LLM explains** — never inventing or overriding a model output. The pipeline has eight independent, testable stages:
+
+ingestion → cleaning → chunking → embedding → vector store → retrieval → prompt building → safety check
+
+- **Corpus curation.** A scripted acquisition pipeline pulled trusted medical sources, then a per-class coverage audit checked all six lesion classes the CV model can output (ACK, BCC, MEL, NEV, SCC, SEK). Four of six had no coverage — I expanded the corpus before moving on, and fixed a counting bug in the audit tool that had been treating 8 documents as 1.
+- **Chunking and embeddings.** Paragraph-based chunking with configurable overlap, embedded with Sentence-Transformers (`all-MiniLM-L6-v2`), each chunk carrying metadata so any answer can be traced back to its source.
+- **Retrieval.** A FAISS vector store with persisted indexes, a semantic retriever, and an evidence formatter that bundles retrieved chunks with citations.
+- **LLM integration.** A Groq API adapter at temperature 0.1 for near-deterministic output, with retries for transient failures — an unreachable LLM reports as *inconclusive*, never as a failed evaluation.
+
+## The hard part
+
+Getting the model to explain without exceeding its evidence. I treated generation as **constrained paraphrase**: the LLM may only restate what the CV computed and what the retrieved sources say, nothing more. That meant building:
+
+- A **grounding check** — every answer must cite a real retrieved source, or it's rejected.
+- A **banned-phrase filter** catching direct-diagnosis claims like "you have melanoma," tuned down after it over-flagged legitimate corpus text.
+- An explicit uncertainty path — weak retrieval produces a stated "I'm not sure," not a confident guess.
+
+| | Before the safety layer | After |
+|---|---|---|
+| Weak-evidence queries | Answered confidently | Explicit uncertainty statement |
+| Diagnosis-style claims | Occasionally slipped through | Caught by the banned-phrase filter |
+| Traceability | None | Every answer cites a source |
+
+## Outcome
+
+- Passed the Phase 1 answer-evaluation gate **16/16** (cited sources, no banned claims, correct uncertainty behavior).
+- Stress-tested the uncertainty criterion against 18 deliberately low-similarity queries to confirm it actually triggers, rather than passing by default.
+- Built a CV-context schema and parser so the RAG consumes structured CV output directly, plus a Streamlit demo and CLI for interactive testing.
+- Next: extend corpus coverage as new lesion subtypes are added, and move the evaluation gate into CI so regressions are caught automatically.

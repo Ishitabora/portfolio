@@ -8,7 +8,7 @@ import type {
 } from "./types";
 
 export const meta: SiteMeta = {
-  baseUrl: "https://ishitabora.vercel.app", // update once deployed
+  baseUrl: "https://ishitabora.vercel.app",
   title: "Ishita Bora",
   description: "Full-stack AI engineer building retrieval-grounded RAG pipelines and the products around them.",
   locale: "en",
@@ -22,7 +22,7 @@ export const profile: Profile = {
   tagline: "I build AI systems that retrieve the right evidence before they explain anything.",
   location: "Bennett University, Greater Noida (Dehradun)",
   email: "ishitabora2906@gmail.com",
-  resumeUrl: "",
+  resumeUrl: "/resume.pdf",
   about: [
     "I'm a full-stack AI engineer who builds systems where the model is only as trustworthy as what it's allowed to say. My main focus is retrieval-augmented generation: pipelines that ground every answer in real, cited evidence instead of letting a language model improvise.",
     "My core project, DermaSense, is a skin-lesion triage tool that pairs a computer vision model with a RAG layer I designed end to end — ingestion, chunking, embeddings, FAISS retrieval, prompt construction, and a safety layer that refuses to let the LLM invent a diagnosis. In a medical setting, a confident wrong answer is worse than no answer, so grounding and evaluation were part of the design from day one, not an afterthought.",
